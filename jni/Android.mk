@@ -16,25 +16,26 @@ LOCAL_PATH := $(call my-dir)
 
 PYTHONVER := 2.7
 PYTHONLIB := ../$(LOCAL_PATH)/../python$(PYTHONVER)-libs
-#PYTHONLIB := $(LOCAL_PATH)/python$(PYTHONVER)-libs
+PYTHONLIBINC := $(LOCAL_PATH)/../python$(PYTHONVER)-libs
 
 
+$(warning $(PYTHONLIB))
+$(warning $(PYTHONLIBINC))
 include $(CLEAR_VARS)
 LOCAL_MODULE := python2.7
 LOCAL_SRC_FILES := $(PYTHONLIB)/lib/libpython2.7.so
-LOCAL_EXPORT_C_INCLUDES := $(PYTHONLIB)/include
+LOCAL_EXPORT_C_INCLUDES := $(PYTHONLIB)/include/
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-#LOCAL_C_INCLUDES := $(PYTHONLIB)/include
-#COMPILED_LIBRARIES := python2.7
-LOCAL_MODULE    := native-activity
+LOCAL_C_INCLUDES := $(PYTHONLIBINC)/include/
+COMPILED_LIBRARIES := python2.7
+LOCAL_MODULE    := application
 LOCAL_SRC_FILES := main.c #start.c #main.c hello.c
 #LOCAL_SHARED_LIBRARIES := python2.7
 #LOCAL_LDLIBS := -L$(PYTHONLIB)/lib/ -llog -landroid -lEGL -lGLESv1_CM -lpython$(PYTHONVER)
-APPLICATION_ADDITIONAL_LDFLAGS := -Xlinker -export-dynamic -Wl,-O1 -Wl,-Bsymbolic-functions
-LOCAL_LDFLAGS := -Lpython2.7-libs/lib $(APPLICATION_ADDITIONAL_LDFLAGS)
-LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv1_CM -lpython$(PYTHONVER)
+#APPLICATION_ADDITIONAL_LDFLAGS := -Xlinker -export-dynamic -Wl,-O1 -Wl,-Bsymbolic-functions
+LOCAL_LDLIBS := -Lpython2.7-libs/lib -llog -lpython$(PYTHONVER) -ldl -lz -lm
 #LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv1_CM
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
 include $(BUILD_SHARED_LIBRARY)
