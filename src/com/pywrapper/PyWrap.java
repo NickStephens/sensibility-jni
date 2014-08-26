@@ -17,11 +17,11 @@ public class PyWrap extends Activity
 
         Log.v(TAG, "Starting up...");
         TextView tv = new TextView(this);
-        tv.setText(stringFromJNI());
+        tv.setText(stringFromJNI("/data/local/tmp/hello.py"));
         setContentView(tv);
     }
 
-    public native String stringFromJNI();
+    public native String stringFromJNI(String script);
 
     static {
       System.loadLibrary("python2.7");
