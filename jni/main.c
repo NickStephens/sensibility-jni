@@ -5,8 +5,28 @@
 
 #include <android/log.h>
 
-
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "PyWrap", __VA_ARGS__))
+
+static PyObject *androidembed_log(PyObject *self, PyObject *args)
+{
+  char *logstr;
+  if (!PyArg_ParseTuple(args, "s", &logstr))
+    return NULL;
+
+  LOGI("%s", logstr);
+  Py_RETURN_NONE;
+}
+
+static PyMethodDef AndroidEmbedMethods[] = {
+    {"log", androidembed_log, METH_VARARGS,
+     "Log on android platform (stolen from python-for-android)"},
+    {NULL, NULL, 0, NULL}
+};
+
+PyMODINIT_FUNC initandroidembed(void)
+{
+  (void) Py_InitModule("androidembed", AndroidEmbedMethods);
+}
 
 jstring Java_com_pywrapper_PyWrap_stringFromJNI(JNIEnv *env, jobject this,
 jstring j_script)
@@ -18,6 +38,8 @@ jstring j_script)
   LOGI("Calling Py_Initialize()");
   LOGI("Running script %s", script);
   Py_Initialize();
+
+  initandroidembed();
 
   fp = fopen(script, "r");
   if (fp == NULL)
