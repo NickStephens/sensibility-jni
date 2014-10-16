@@ -35,7 +35,7 @@ LOCAL_SRC_FILES := main.c #start.c #main.c hello.c
 #LOCAL_SHARED_LIBRARIES := python2.7
 #LOCAL_LDLIBS := -L$(PYTHONLIB)/lib/ -llog -landroid -lEGL -lGLESv1_CM -lpython$(PYTHONVER)
 #APPLICATION_ADDITIONAL_LDFLAGS := -Xlinker -export-dynamic -Wl,-O1 -Wl,-Bsymbolic-functions
-LOCAL_LDLIBS := -Lpython2.7-libs/lib -llog -lpython$(PYTHONVER) -ldl -lz -lm
+LOCAL_LDLIBS := -Lpython2.7-libs/lib -landroid -llog -lpython$(PYTHONVER) -ldl -lz -lm
 #LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv1_CM
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
 include $(BUILD_SHARED_LIBRARY)
