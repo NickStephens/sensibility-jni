@@ -1,0 +1,5 @@
+Build with:
+
+ndk-build
+ant debug
+adb install -r bin/PyWrapper-debug.apk
