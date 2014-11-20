@@ -1,5 +1,12 @@
 Build with:
 
-ndk-build
-ant debug
-adb install -r bin/PyWrapper-debug.apk
+ $ ndk-build
+ $ ant debug
+ $ adb install -r bin/PyWrapper-debug.apk
+
+Move the python testing script onto your device:
+ $ adb push pyscripts/test.py /data/local/tmp/
+
+State of the Code:
+ The code will execute the Python script located at /data/local/tmp/test.py. It will make two Python modules available to the script, 'androidembed' and 'sensors'. 'androidembed' will allow the Python script to write log entries into logcat. 'sensors' attempts to read off sensor data written into a public static variable of the PyWrap class. There are currently problems with this, however. The PyWrap class registers an accelerometer listener function to fire on every accelerometer sensor event, this function seems to no longer be called once we begine executing our Python script.
+
