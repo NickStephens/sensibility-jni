@@ -44,7 +44,7 @@ public class PyWrap extends Activity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        Hardware.context = (Context) this;
+        //Hardware.context = (Context) this;
 
         Log.v(TAG, "Starting up...");
         Log.v(TAG, "Initializing Sensor Manager...");
