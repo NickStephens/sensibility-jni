@@ -1,3 +1,6 @@
+Both local.properties and project.properties will have to be modified to accomodate your environment. The local.properties file should be modified with the base directory of your android-sdk install location. The project.properties file should be modified with specify any Android API number included in your SDK installation.
+
+
 Build with:
 
  $ ndk-build
