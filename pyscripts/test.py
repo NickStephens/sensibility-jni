@@ -3,6 +3,9 @@ import sensors
 import time
 
 androidembed.log("Python saying HELLO!")
+
 while True:
-  time.sleep(1)
-  #sensors.last_event()
+  vals = sensors.poll_event() 
+  androidembed.log(str(vals))
+
+androidembed.log("Done gathering sensor data!")
