@@ -9,49 +9,34 @@
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "PyWrap", __VA_ARGS__))
 
+/* globally accessible java enviornment */
 JNIEnv *global_env;
 
+/* globals for sensors */
+ASensorEventQueue *sensorEventQueue;
+ASensorManager *sensorManager;
+ASensor *sensor;
+
+ASensorEvent event;
+
+unsigned sensorEventLimit = 0;
+unsigned sensorEventCount = 0;
+
 /* Sensor Extension */
-static PyObject *last_event(PyObject *self, PyObject *args)
+static PyObject *poll_event(PyObject *self, PyObject *args)
 {
+  
+  LOGI("[last_event] calling ALooper_pollOnce");
+  /* blocks until a new event arrived */
+  ALooper_pollOnce(-1, NULL, NULL, NULL);
 
-  jclass cls = (*global_env)->FindClass(global_env, "com/pywrapper/PyWrap");
-  if (cls == NULL)
-  {
-    LOGI("Unable to resolve Sensor class");
-    Py_RETURN_NONE;
-  }
-  LOGI("Sensor class resolved");
-
-  jfieldID fid = (*global_env)->GetStaticFieldID(global_env, cls, "globalEvent", "F");
-
-  if (fid == NULL)
-  {
-    LOGI("Unable to resolve the static field globalEvent");
-    Py_RETURN_NONE;
-  }
-  LOGI("globalEvent field resolved");
-
-  jfloat fl = (*global_env)->GetStaticFloatField(global_env, cls, fid);
-
-  LOGI("globalEvent: %f", fl);
-
-  /*
-  jmethodID mid = (*global_env)->GetStaticMethodID(global_env, cls, "callme", "()V");
-  if (mid == NULL)
-  {
-    LOGI("Unable to resolve Java method");
-  }
-
-  (*global_env)->CallStaticVoidMethod(global_env, cls, mid);
-  */
-
-  Py_RETURN_NONE;
+  return Py_BuildValue("[f,f,f]", event.acceleration.x, event.acceleration.y,
+    event.acceleration.z);
 }
 
 static PyMethodDef SensorMethods[] = {
-  {"last_event", last_event, METH_VARARGS,  
-   "read off the last sensor event"},
+  {"poll_event", poll_event, METH_VARARGS,  
+   "polls for a sensor event, blocks until one occurs."},
   {NULL, NULL, 0, NULL}
 };
 
@@ -82,31 +67,29 @@ PyMODINIT_FUNC initandroidembed(void)
   (void) Py_InitModule("androidembed", AndroidEmbedMethods);
 }
 
-ASensorEventQueue *sensorEventQueue;
-unsigned sensorEventLimit = 0;
-unsigned sensorEventCount = 0;
-
 int get_sensor_events(int fd, int events, void *data)
 {
-  ASensorEvent event;
 
   while(ASensorEventQueue_getEvents(sensorEventQueue, &event, 1)>0)
   {
     if (event.type == ASENSOR_TYPE_ACCELEROMETER) {
-          sensorEventCount++;
           LOGI("accelerometer: %d x=%f y=%f z=%f", 
               sensorEventCount, event.acceleration.x, event.acceleration.y,
               event.acceleration.z);
-          if (sensorEventCount >= sensorEventLimit)
-          {
-            LOGI("Limit reached");
-            break;
-          }
     }
   }
     
-  LOGI("Returning from callback");
   return 1;
+}
+
+void destroy_sensors(void)
+{
+  LOGI("Destroying sensor manager from NDK");
+  int ret = ASensorEventQueue_disableSensor(sensorEventQueue, sensor);
+  LOGI("ASensorEventQueue_disableSensor returned %d", ret);
+
+  ret = ASensorManager_destroyEventQueue(sensorManager, sensorEventQueue);
+  LOGI("ASensorManager_destroyEventQueue returned %d", ret);
 }
 
 void setup_sensors(void)
@@ -120,10 +103,10 @@ void setup_sensors(void)
   }
   LOGI("looper object @ %x", looper);
 
-  ASensorManager *sensorManager = ASensorManager_getInstance();
+  sensorManager = ASensorManager_getInstance();
   LOGI("sensorManager @ %x", sensorManager);
 
-  ASensor *sensor = ASensorManager_getDefaultSensor(sensorManager, ASENSOR_TYPE_ACCELEROMETER);
+  sensor = ASensorManager_getDefaultSensor(sensorManager, ASENSOR_TYPE_ACCELEROMETER);
   LOGI("sensor @ %x", sensor);
 
   sensorEventQueue = ASensorManager_createEventQueue(sensorManager, looper, LOOPER_ID_USER, get_sensor_events, NULL);
@@ -131,12 +114,6 @@ void setup_sensors(void)
 
   int ret = ASensorEventQueue_enableSensor(sensorEventQueue, sensor);
   LOGI("ASensorEventQueue_enableSensor returned %d", ret);
-
-
-  sensorEventLimit = 5;
-
-  int ident;
-  int events;
 
 }
 
@@ -149,14 +126,6 @@ jstring j_script)
 
   /* set up our sensor manager */
   setup_sensors();
-
-
-  LOGI("Entering sensor checking loop");
-  while(sensorEventCount < sensorEventLimit)
-  {
-    ALooper_pollOnce(-1, NULL, NULL, NULL);
-  }
-
 
   /* Make this accessible to our Python Module */
   global_env = env;
@@ -187,5 +156,7 @@ jstring j_script)
 
   Py_Finalize();
   LOGI("Python script completed");
+
+  destroy_sensors();
 
 }
