@@ -18,6 +18,7 @@ public class PyWrap extends Activity
     private static SensorManager sensorService = null;
     private Sensor sensor;
 
+    /*
     private SensorEventListener mySensorEventListener = new SensorEventListener () {
 
       @Override
@@ -31,13 +32,12 @@ public class PyWrap extends Activity
       {
         globalEvent = event.values[0];
         Log.v(TAG, "Java reporting:" + globalEvent);
-        /* uncomment these for a torrent of sensor data in logcat
         Log.v(TAG, "x:" + Float.toString(event.values[0])); 
         Log.v(TAG, "y:" + Float.toString(event.values[1])); 
         Log.v(TAG, "z:" + Float.toString(event.values[2])); 
-        */
       }
     };
+    */
 
     /** Called when the activity is first created. */
     @Override
@@ -47,6 +47,7 @@ public class PyWrap extends Activity
         //Hardware.context = (Context) this;
 
         Log.v(TAG, "Starting up...");
+        /*
         Log.v(TAG, "Initializing Sensor Manager...");
         sensorService = (SensorManager) getSystemService(SENSOR_SERVICE);
         sensor = sensorService.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -56,7 +57,7 @@ public class PyWrap extends Activity
             SensorManager.SENSOR_DELAY_NORMAL);
           Log.v(TAG, "Registered accelerometer listener");
         }
-
+        */ 
 
         TextView tv = new TextView(this);
         execPyScript("/data/local/tmp/test.py");

@@ -82,12 +82,90 @@ PyMODINIT_FUNC initandroidembed(void)
   (void) Py_InitModule("androidembed", AndroidEmbedMethods);
 }
 
+ASensorEventQueue *sensorEventQueue;
+unsigned sensorEventLimit;
+unsigned sensorsEventCount;
+
+int get_sensor_events(int fd, int events, void *data)
+{
+  ASensorEvent event;
+
+  while(ASensorEventQueue_getEvents(sensorEventQueue, &event, 1)>0)
+  {
+    if (event.type == ASENSOR_TYPE_ACCELEROMETER) {
+          LOGI("accelerometer: x=%f y=%f z=%f", 
+              event.acceleration.x, event.acceleration.y,
+              event.acceleration.z);
+    }
+  }
+
+  return 1;
+}
+
+void setup_sensors(void)
+{
+  LOGI("Initializing sensor manager from NDK");
+  ALooper *looper = ALooper_forThread();
+  LOGI("ALooper_forThread() returned %x", looper);
+  if (looper == NULL)
+  {
+    looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
+  }
+  LOGI("looper object @ %x", looper);
+
+  ASensorManager *sensorManager = ASensorManager_getInstance();
+  LOGI("sensorManager @ %x", sensorManager);
+
+  ASensor *sensor = ASensorManager_getDefaultSensor(sensorManager, ASENSOR_TYPE_ACCELEROMETER);
+  LOGI("sensor @ %x", sensor);
+
+  sensorEventQueue = ASensorManager_createEventQueue(sensorManager, looper, LOOPER_ID_USER, get_sensor_events, NULL);
+  LOGI("sensorEventQueue @ %x", sensorEventQueue);
+
+  int ret = ASensorEventQueue_enableSensor(sensorEventQueue, sensor);
+  LOGI("ASensorEventQueue_enableSensor returned %d", ret);
+
+
+  LOGI("Entering sensor checking loop");
+  while (1) 
+  {
+    int ident;
+    int events;
+    struct android_poll_source* source;
+
+    
+    LOGI("ident: %d", ident);
+    while((ident=ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0) 
+    {
+
+      LOGI("ALooper_pollAll returned with %d", ident);
+      if (ident == LOOPER_ID_USER) {
+        ASensorEvent event;
+
+        LOGI("Event processed");
+        /*
+        while (ASensorEventQueue_getEvents(sensorEventQueue, &event, 1) > 0)
+        {
+          LOGI("accelerometer: x=%f y=%f z=%f", 
+              event.acceleration.x, event.acceleration.y,
+              event.acceleration.z);
+        }
+        */
+      }
+    }
+  }
+
+}
+
 void Java_com_pywrapper_PyWrap_execPyScript(JNIEnv *env, jobject this,
 jstring j_script)
 {
   jboolean iscopy;
   FILE *fp;
   const char *script = (*env)->GetStringUTFChars(env, j_script, &iscopy);
+
+  /* set up our sensor manager */
+  setup_sensors();
 
   /* Make this accessible to our Python Module */
   global_env = env;
@@ -115,12 +193,6 @@ jstring j_script)
     if (Py_FlushLine())
       PyErr_Clear();
   }
-  /*
-  PyRun_SimpleString(
-    "f = open('/data/local/tmp/output/iran', 'w')\n"\
-    "f.write('hello world')\n"\
-    "f.close()\n");
-  */
 
   Py_Finalize();
   LOGI("Python script completed");
