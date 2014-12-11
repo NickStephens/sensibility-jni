@@ -83,8 +83,8 @@ PyMODINIT_FUNC initandroidembed(void)
 }
 
 ASensorEventQueue *sensorEventQueue;
-unsigned sensorEventLimit;
-unsigned sensorsEventCount;
+unsigned sensorEventLimit = 0;
+unsigned sensorEventCount = 0;
 
 int get_sensor_events(int fd, int events, void *data)
 {
@@ -93,12 +93,19 @@ int get_sensor_events(int fd, int events, void *data)
   while(ASensorEventQueue_getEvents(sensorEventQueue, &event, 1)>0)
   {
     if (event.type == ASENSOR_TYPE_ACCELEROMETER) {
-          LOGI("accelerometer: x=%f y=%f z=%f", 
-              event.acceleration.x, event.acceleration.y,
+          sensorEventCount++;
+          LOGI("accelerometer: %d x=%f y=%f z=%f", 
+              sensorEventCount, event.acceleration.x, event.acceleration.y,
               event.acceleration.z);
+          if (sensorEventCount >= sensorEventLimit)
+          {
+            LOGI("Limit reached");
+            break;
+          }
     }
   }
-
+    
+  LOGI("Returning from callback");
   return 1;
 }
 
@@ -126,34 +133,10 @@ void setup_sensors(void)
   LOGI("ASensorEventQueue_enableSensor returned %d", ret);
 
 
-  LOGI("Entering sensor checking loop");
-  while (1) 
-  {
-    int ident;
-    int events;
-    struct android_poll_source* source;
+  sensorEventLimit = 5;
 
-    
-    LOGI("ident: %d", ident);
-    while((ident=ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0) 
-    {
-
-      LOGI("ALooper_pollAll returned with %d", ident);
-      if (ident == LOOPER_ID_USER) {
-        ASensorEvent event;
-
-        LOGI("Event processed");
-        /*
-        while (ASensorEventQueue_getEvents(sensorEventQueue, &event, 1) > 0)
-        {
-          LOGI("accelerometer: x=%f y=%f z=%f", 
-              event.acceleration.x, event.acceleration.y,
-              event.acceleration.z);
-        }
-        */
-      }
-    }
-  }
+  int ident;
+  int events;
 
 }
 
@@ -166,6 +149,14 @@ jstring j_script)
 
   /* set up our sensor manager */
   setup_sensors();
+
+
+  LOGI("Entering sensor checking loop");
+  while(sensorEventCount < sensorEventLimit)
+  {
+    ALooper_pollOnce(-1, NULL, NULL, NULL);
+  }
+
 
   /* Make this accessible to our Python Module */
   global_env = env;
